@@ -250,36 +250,78 @@ class HistoriaGame {
     
     init() {
         this.setupEventListeners();
-        this.setupStartButton();
+        this.setupAllButtons();
         this.updateHighScoreDisplay();
         this.showMenu();
     }
     
-    setupStartButton() {
-        const startButton = document.getElementById('startButton');
-        if (startButton) {
-            // Remove any existing event listeners
-            startButton.replaceWith(startButton.cloneNode(true));
-            const newStartButton = document.getElementById('startButton');
-            
-            // Add click event for desktop
-            newStartButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('Start button clicked');
-                this.start();
-            });
-            
-            // Add touch event for mobile
-            newStartButton.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Start button touched');
-                this.start();
-            });
-            
-            console.log('Start button event listeners added');
-        } else {
-            console.error('Start button not found');
+    setupAllButtons() {
+        // 시작 버튼
+        this.setupButton('startButton', () => {
+            console.log('Start button activated');
+            this.start();
+        });
+        
+        // 일시정지 버튼 (게임 헤더에 있는)
+        this.setupButton('pauseButton', () => {
+            console.log('Pause button activated');
+            this.pause();
+        });
+        
+        // 재시작 버튼 (게임 오버 화면)
+        this.setupButton('restartButton', () => {
+            console.log('Restart button activated');
+            this.start();
+        });
+        
+        // 계속하기 버튼 (일시정지 화면)
+        this.setupButton('resumeButton', () => {
+            console.log('Resume button activated');
+            this.resume();
+        });
+        
+        // 메뉴로 돌아가기 버튼 (일시정지 화면)
+        this.setupButton('quitButton', () => {
+            console.log('Quit button activated');
+            this.quitToMenu();
+        });
+    }
+    
+    setupButton(buttonId, callback) {
+        // 즉시 버튼을 찾고 설정하거나, 나중에 찾을 수 있도록 시도
+        const attemptSetup = () => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                // Remove any existing event listeners by cloning
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                
+                // Add click event for desktop
+                newButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log(`${buttonId} clicked`);
+                    callback();
+                });
+                
+                // Add touch event for mobile
+                newButton.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log(`${buttonId} touched`);
+                    callback();
+                });
+                
+                console.log(`${buttonId} event listeners added`);
+                return true;
+            }
+            return false;
+        };
+        
+        // 즉시 시도
+        if (!attemptSetup()) {
+            // 버튼이 아직 없다면 잠시 후 다시 시도
+            setTimeout(attemptSetup, 100);
         }
     }
     
@@ -302,6 +344,13 @@ class HistoriaGame {
     showMenu() {
         this.menuScreen.style.display = 'flex';
         this.gameState = 'ready';
+        // 메뉴 화면의 버튼들 재설정
+        setTimeout(() => {
+            this.setupButton('startButton', () => {
+                console.log('Start button activated');
+                this.start();
+            });
+        }, 50);
     }
     
     setupEventListeners() {
@@ -951,6 +1000,14 @@ class HistoriaGame {
         
         this.finalScoreElement.textContent = this.score;
         this.gameOverElement.style.display = 'flex';
+        
+        // 게임 오버 화면의 버튼들 재설정
+        setTimeout(() => {
+            this.setupButton('restartButton', () => {
+                console.log('Restart button activated');
+                this.start();
+            });
+        }, 50);
     }
     
     gameLoop() {
@@ -1085,6 +1142,17 @@ class HistoriaGame {
         if (this.gameState === 'playing') {
             this.gameState = 'paused';
             this.pauseScreen.style.display = 'flex';
+            // 일시정지 화면의 버튼들 재설정
+            setTimeout(() => {
+                this.setupButton('resumeButton', () => {
+                    console.log('Resume button activated');
+                    this.resume();
+                });
+                this.setupButton('quitButton', () => {
+                    console.log('Quit button activated');
+                    this.quitToMenu();
+                });
+            }, 50);
         }
     }
     
