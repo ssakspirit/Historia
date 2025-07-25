@@ -250,8 +250,37 @@ class HistoriaGame {
     
     init() {
         this.setupEventListeners();
+        this.setupStartButton();
         this.updateHighScoreDisplay();
         this.showMenu();
+    }
+    
+    setupStartButton() {
+        const startButton = document.getElementById('startButton');
+        if (startButton) {
+            // Remove any existing event listeners
+            startButton.replaceWith(startButton.cloneNode(true));
+            const newStartButton = document.getElementById('startButton');
+            
+            // Add click event for desktop
+            newStartButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Start button clicked');
+                this.start();
+            });
+            
+            // Add touch event for mobile
+            newStartButton.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Start button touched');
+                this.start();
+            });
+            
+            console.log('Start button event listeners added');
+        } else {
+            console.error('Start button not found');
+        }
     }
     
     loadHighScore() {
@@ -1113,8 +1142,28 @@ class HistoriaGame {
 let game;
 
 function startGame() {
+    console.log('Global startGame called, game instance:', game);
     if (game) {
+        console.log('Starting game...');
         game.start();
+    } else {
+        console.log('Game not initialized yet, waiting...');
+        // If game isn't initialized yet, wait a bit and try again
+        setTimeout(() => {
+            if (game) {
+                console.log('Starting game after delay...');
+                game.start();
+            } else {
+                console.error('Game failed to initialize');
+                // Try initializing the game now
+                try {
+                    game = new HistoriaGame();
+                    game.start();
+                } catch (error) {
+                    console.error('Failed to create game instance:', error);
+                }
+            }
+        }, 100);
     }
 }
 
@@ -1143,6 +1192,18 @@ function restartGame() {
 }
 
 // 게임 초기화
-window.addEventListener('load', () => {
+window.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing game...');
     game = new HistoriaGame();
+    console.log('Game initialized:', game);
 });
+
+// Fallback initialization if DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+    // DOMContentLoaded hasn't fired yet
+} else {
+    // DOMContentLoaded has already fired
+    console.log('DOM already loaded, initializing game immediately...');
+    game = new HistoriaGame();
+    console.log('Game initialized:', game);
+}
