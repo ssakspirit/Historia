@@ -58,6 +58,10 @@ class HistoriaGame {
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
         
+        // 게임 루프 관리
+        this.gameLoopRunning = false;
+        this.animationFrameId = null;
+        
         // Web Audio API 초기화
         this.audioContext = null;
         this.initAudio();
@@ -391,7 +395,7 @@ class HistoriaGame {
         const tile = document.createElement('div');
         tile.className = 'tile';
         tile.style.top = this.columnPosition + 'px';
-        tile.style.left = (50 + index * 85) + 'px'; // 임시 위치, updateColumnPositions에서 중앙 정렬
+        tile.style.left = (50 + index * 82) + 'px'; // 임시 위치, updateColumnPositions에서 중앙 정렬
         
         // 특별 타일 처리
         if (eventData.special) {
@@ -495,7 +499,7 @@ class HistoriaGame {
         const totalTiles = this.fallingColumn.length;
         const boardWidth = 340;
         const tileWidth = 80;
-        const tileSpacing = 85;
+        const tileSpacing = 82; // 간격을 줄여서 오른쪽 여백 확보
         const totalWidth = totalTiles * tileWidth + (totalTiles - 1) * (tileSpacing - tileWidth);
         const startX = (boardWidth - totalWidth) / 2;
         
@@ -902,6 +906,13 @@ class HistoriaGame {
         this.gameState = 'gameOver';
         this.playSound('gameover');
         
+        // 게임 루프 중단
+        this.gameLoopRunning = false;
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+        
         // 최고 점수 업데이트
         if (this.score > this.highScore) {
             this.highScore = this.score;
@@ -915,7 +926,9 @@ class HistoriaGame {
     
     gameLoop() {
         if (this.gameState !== 'playing') {
-            requestAnimationFrame(() => this.gameLoop());
+            if (this.gameLoopRunning) {
+                this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
+            }
             return;
         }
         
@@ -997,7 +1010,9 @@ class HistoriaGame {
             return;
         }
         
-        requestAnimationFrame(() => this.gameLoop());
+        if (this.gameLoopRunning) {
+            this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
+        }
     }
     
     start() {
@@ -1028,6 +1043,12 @@ class HistoriaGame {
         
         this.updateScore();
         this.updateLevel();
+        
+        // 게임 루프 시작 (기존 루프가 있다면 중단)
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
+        this.gameLoopRunning = true;
         this.gameLoop();
     }
     
@@ -1054,6 +1075,22 @@ class HistoriaGame {
         this.gameState = 'ready';
         this.pauseScreen.style.display = 'none';
         
+        // 게임 루프 중단
+        this.gameLoopRunning = false;
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+        
+        // 게임 상태 완전 초기화
+        this.score = 0;
+        this.level = 1;
+        this.fallSpeed = 0.5; // 초기 속도로 리셋
+        this.spawnTimer = 0;
+        this.spawnInterval = 120; // 초기 스폰 간격으로 리셋
+        this.fallingColumn = [];
+        this.stackedTiles = [];
+        
         // 게임 보드 초기화
         const gameBoard = document.querySelector('.game-board');
         const tiles = gameBoard.querySelectorAll('.tile');
@@ -1063,6 +1100,10 @@ class HistoriaGame {
         this.particles = [];
         const particles = gameBoard.querySelectorAll('.particle');
         particles.forEach(particle => particle.remove());
+        
+        // UI 업데이트
+        this.updateScore();
+        this.updateLevel();
         
         this.showMenu();
     }
