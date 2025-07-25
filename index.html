@@ -2,7 +2,10 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Historia - 한국사 타임라인 퍼즐 게임</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
@@ -11,24 +14,37 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         body {
-            background: linear-gradient(135deg, rgba(92, 51, 23, 0.3) 0%, rgba(139, 90, 43, 0.2) 50%, rgba(160, 82, 45, 0.1) 100%),
-                        url('src/historia.png') center/cover no-repeat;
-            backdrop-filter: blur(3px);
+            background: linear-gradient(135deg, rgba(92, 51, 23, 0.8) 0%, rgba(139, 90, 43, 0.6) 50%, rgba(160, 82, 45, 0.4) 100%);
             color: white;
             font-family: 'Arial', sans-serif;
-            overflow: hidden;
-            height: 100vh;
             margin: 0;
             padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .game-container {
             position: relative;
-            width: 100vw;
-            height: 100vh;
+            width: 360px;
+            height: 640px;
+            background: linear-gradient(135deg, rgba(92, 51, 23, 0.3) 0%, rgba(139, 90, 43, 0.2) 50%, rgba(160, 82, 45, 0.1) 100%),
+                        url('src/historia.png') center/cover no-repeat;
+            backdrop-filter: blur(3px);
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
             overflow: hidden;
         }
 
@@ -46,78 +62,81 @@
 
         .game-header {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
+            top: 10px;
+            left: 10px;
+            right: 10px;
             z-index: 100;
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            padding: 15px;
+            padding: 5px;
         }
 
         .header-boxes {
             display: flex;
-            gap: 8px;
+            gap: 4px;
             justify-content: center;
             align-items: flex-start;
+            flex-wrap: wrap;
         }
 
         .header-box {
             background: rgba(139, 69, 19, 0.8);
-            border: 3px solid #D4AF37;
-            border-radius: 8px;
-            padding: 8px;
-            width: 115px;
-            height: 75px;
+            border: 2px solid #D4AF37;
+            border-radius: 6px;
+            padding: 4px;
+            width: 65px;
+            height: 50px;
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
             box-sizing: border-box;
             box-shadow: 
-                0 0 15px rgba(212, 175, 55, 0.4),
-                inset 0 0 25px rgba(139, 69, 19, 0.3);
+                0 0 10px rgba(212, 175, 55, 0.4),
+                inset 0 0 15px rgba(139, 69, 19, 0.3);
+            touch-action: manipulation;
         }
 
         .header-box h4 {
             color: #ffd700;
-            margin: 0 0 5px 0;
-            font-size: 14px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            margin: 0 0 2px 0;
+            font-size: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
         }
 
         .header-box p {
             color: #f4e4bc;
             margin: 0;
-            font-size: 10px;
-            line-height: 1.2;
+            font-size: 7px;
+            line-height: 1.0;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
             white-space: nowrap;
             overflow: hidden;
         }
 
         .header-box p span {
-            font-size: 16px;
+            font-size: 12px;
             font-weight: bold;
         }
 
         .pause-box {
             cursor: pointer;
             transition: all 0.3s ease;
-            border: 3px solid #D4AF37 !important;
+            border: 2px solid #D4AF37 !important;
             box-shadow: 
-                0 0 15px rgba(212, 175, 55, 0.4),
-                inset 0 0 25px rgba(139, 69, 19, 0.3) !important;
+                0 0 10px rgba(212, 175, 55, 0.4),
+                inset 0 0 15px rgba(139, 69, 19, 0.3) !important;
+            min-height: 44px;
         }
 
         .pause-box h4 {
-            font-size: 16px !important;
-            margin-bottom: 2px !important;
+            font-size: 10px !important;
+            margin-bottom: 1px !important;
         }
 
         .pause-emoji {
-            font-size: 24px !important;
+            font-size: 16px !important;
             margin: 0 !important;
             line-height: 1 !important;
         }
@@ -135,23 +154,24 @@
             position: relative;
             width: 100%;
             height: 100%;
+            padding-top: 70px;
         }
 
         .game-board {
             position: absolute;
-            width: 600px;
-            height: 600px;
+            width: 340px;
+            height: 500px;
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
             background: linear-gradient(rgba(139, 69, 19, 0.7), rgba(160, 82, 45, 0.6)),
                         url('src/sigansina.png') center/cover no-repeat;
-            border: 4px solid #D4AF37;
+            border: 3px solid #D4AF37;
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 
-                0 0 20px rgba(212, 175, 55, 0.5),
-                inset 0 0 30px rgba(139, 69, 19, 0.3);
+                0 0 15px rgba(212, 175, 55, 0.5),
+                inset 0 0 20px rgba(139, 69, 19, 0.3);
         }
 
         .grid-background {
@@ -163,8 +183,8 @@
 
         .tile {
             position: absolute;
-            width: 110px;
-            height: 60px;
+            width: 80px;
+            height: 50px;
             border-radius: 5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             cursor: pointer;
@@ -173,13 +193,15 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 4px;
-            font-size: 16px;
+            padding: 3px;
+            font-size: 11px;
             font-weight: bold;
             color: white;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
             border: 2px solid rgba(255,255,255,0.3);
-            line-height: 1.1;
+            line-height: 1.0;
+            touch-action: manipulation;
+            min-height: 44px;
         }
 
         .tile::before {
@@ -216,8 +238,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(255,255,255,0.3);
-            font-size: 16px;
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
             font-weight: bold;
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -235,8 +257,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(255,255,255,0.3);
-            font-size: 16px;
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
             font-weight: bold;
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -364,11 +386,14 @@
             background: #4CAF50;
             color: white;
             border: none;
-            padding: 15px 30px;
+            padding: 12px 25px;
             border-radius: 10px;
             font-size: 16px;
             cursor: pointer;
-            margin-top: 20px;
+            margin-top: 15px;
+            min-height: 48px;
+            min-width: 120px;
+            touch-action: manipulation;
         }
 
         .restart-btn:hover {
@@ -401,34 +426,37 @@
 
         .menu-content h1 {
             color: #ffd700;
-            margin-bottom: 40px;
-            font-size: 4rem;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
             text-shadow: 
-                4px 4px 0px #8B4513,
-                0 0 40px rgba(255, 215, 0, 1),
-                0 0 80px rgba(255, 215, 0, 0.6);
+                3px 3px 0px #8B4513,
+                0 0 30px rgba(255, 215, 0, 1),
+                0 0 60px rgba(255, 215, 0, 0.6);
             font-family: 'Times New Roman', serif;
             font-weight: bold;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
         }
 
         .start-btn {
             background: linear-gradient(135deg, #8B4513, #A0522D);
             color: #f4e4bc;
             border: 3px solid #ffd700;
-            padding: 20px 50px;
+            padding: 15px 40px;
             border-radius: 12px;
-            font-size: 22px;
+            font-size: 18px;
             cursor: pointer;
-            margin: 30px 0;
+            margin: 20px 0;
             transition: all 0.3s ease;
             font-weight: bold;
-            text-shadow: 3px 3px 6px rgba(0, 0, 0, 1);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 1);
             box-shadow: 
-                0 8px 20px rgba(0, 0, 0, 0.6),
+                0 6px 15px rgba(0, 0, 0, 0.6),
                 inset 0 2px 0 rgba(255, 255, 255, 0.2);
             position: relative;
             overflow: hidden;
+            min-height: 50px;
+            min-width: 200px;
+            touch-action: manipulation;
         }
 
         .start-btn::before {
@@ -518,15 +546,17 @@
             background: #667eea;
             color: white;
             border: none;
-            padding: 15px 30px;
+            padding: 12px 25px;
             border-radius: 10px;
             font-size: 16px;
             cursor: pointer;
-            margin: 10px;
+            margin: 8px;
             transition: background 0.3s ease;
-            min-width: 180px;
+            min-width: 160px;
+            min-height: 48px;
             display: block;
-            margin: 10px auto;
+            margin: 8px auto;
+            touch-action: manipulation;
         }
 
         .pause-btn-action:hover {
@@ -540,9 +570,66 @@
         .pause-btn-action.quit:hover {
             background: #ff5252;
         }
+
+        /* 회전 경고 메시지 */
+        .rotate-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .rotate-warning h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+
+        .rotate-warning p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .rotate-warning .rotate-icon {
+            font-size: 48px;
+            margin: 20px 0;
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 가로 모드일 때 회전 경고 표시 */
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            .rotate-warning {
+                display: flex;
+            }
+            .game-container {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- 회전 경고 메시지 -->
+    <div class="rotate-warning">
+        <div class="rotate-icon">📱</div>
+        <h2>세로 모드로 회전해주세요</h2>
+        <p>Historia는 세로 모드에 최적화되어 있습니다.<br>더 나은 게임 경험을 위해 화면을 세로로 회전해주세요.</p>
+    </div>
+
     <div class="game-container">
         <div class="menu-screen" id="menuScreen">
             <div class="menu-content">

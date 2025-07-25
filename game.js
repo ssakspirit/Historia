@@ -52,7 +52,11 @@ class HistoriaGame {
         this.spawnTimer = 0;
         this.spawnInterval = 120; // frames (더 짧은 간격 - 2초)
         this.selectedTile = null;
-        this.columnPosition = -70; // start position from above screen
+        this.columnPosition = -50; // 모바일에 맞춘 시작 위치
+        
+        // 모바일 감지
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                       (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
         
         // Web Audio API 초기화
         this.audioContext = null;
@@ -64,6 +68,7 @@ class HistoriaGame {
         // 최고 점수 관리
         this.highScore = this.loadHighScore();
         
+        console.log('Historia Game initialized - Mobile:', this.isMobile);
         this.init();
     }
     
@@ -267,7 +272,53 @@ class HistoriaGame {
     }
     
     setupEventListeners() {
+        // 터치 이벤트 변수
+        let touchStartTime = 0;
+        let touchMoved = false;
+        
+        // 터치 시작
+        document.addEventListener('touchstart', (e) => {
+            touchStartTime = Date.now();
+            touchMoved = false;
+        }, { passive: true });
+        
+        // 터치 이동
+        document.addEventListener('touchmove', (e) => {
+            touchMoved = true;
+        }, { passive: true });
+        
+        // 터치 종료 (탭)
+        document.addEventListener('touchend', (e) => {
+            e.preventDefault(); // 300ms 지연 방지
+            
+            // 이동하지 않았고 빠른 탭인 경우만 처리
+            if (!touchMoved && (Date.now() - touchStartTime) < 300) {
+                const touch = e.changedTouches[0];
+                const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                
+                if (element && element.classList.contains('tile')) {
+                    this.handleTileTouch(element, touch);
+                } else if (this.gameState === 'playing' && this.fallingColumn.length > 0) {
+                    // 게임 보드 영역 내에서만 빠른 드롭 실행
+                    const gameBoard = document.querySelector('.game-board');
+                    const gameBoardRect = gameBoard.getBoundingClientRect();
+                    const touchX = touch.clientX;
+                    const touchY = touch.clientY;
+                    
+                    // 터치가 게임 보드 내부에 있는지 확인
+                    if (touchX >= gameBoardRect.left && touchX <= gameBoardRect.right &&
+                        touchY >= gameBoardRect.top && touchY <= gameBoardRect.bottom) {
+                        this.dropTilesFast();
+                    }
+                }
+            }
+        });
+        
+        // 마우스 클릭 (데스크톱용)
         document.addEventListener('click', (e) => {
+            // 터치 이벤트가 있는 경우 마우스 이벤트 무시
+            if (e.detail === 0 || e.isTrusted === false) return;
+            
             if (e.target.classList.contains('tile')) {
                 this.handleTileClick(e.target, e);
             } else if (this.gameState === 'playing' && this.fallingColumn.length > 0) {
@@ -340,7 +391,7 @@ class HistoriaGame {
         const tile = document.createElement('div');
         tile.className = 'tile';
         tile.style.top = this.columnPosition + 'px';
-        tile.style.left = (100 + index * 120) + 'px'; // 임시 위치, updateColumnPositions에서 중앙 정렬
+        tile.style.left = (50 + index * 85) + 'px'; // 임시 위치, updateColumnPositions에서 중앙 정렬
         
         // 특별 타일 처리
         if (eventData.special) {
@@ -399,6 +450,25 @@ class HistoriaGame {
         }
     }
     
+    handleTileTouch(tile, touch) {
+        if (this.gameState !== 'playing') return;
+        if (!this.fallingColumn.includes(tile)) return;
+        
+        const index = parseInt(tile.dataset.index);
+        const rect = tile.getBoundingClientRect();
+        const touchX = touch.clientX - rect.left;
+        const tileWidth = rect.width;
+        const isRightSide = touchX > tileWidth / 2;
+        
+        if (isRightSide) {
+            // 오른쪽 터치: 오른쪽으로 이동
+            this.moveTileRight(index);
+        } else {
+            // 왼쪽 터치: 왼쪽으로 이동
+            this.moveTileLeft(index);
+        }
+    }
+    
     moveTileLeft(index) {
         if (index > 0) {
             // 왼쪽 타일과 교환 (맨 왼쪽이 아닐 때만)
@@ -423,9 +493,9 @@ class HistoriaGame {
     
     updateColumnPositions() {
         const totalTiles = this.fallingColumn.length;
-        const boardWidth = 600;
-        const tileWidth = 110;
-        const tileSpacing = 120;
+        const boardWidth = 340;
+        const tileWidth = 80;
+        const tileSpacing = 85;
         const totalWidth = totalTiles * tileWidth + (totalTiles - 1) * (tileSpacing - tileWidth);
         const startX = (boardWidth - totalWidth) / 2;
         
@@ -443,8 +513,8 @@ class HistoriaGame {
         if (this.fallingColumn.length === 0) return;
         
         // 현재 떨어지는 타일들을 빠르게 바닥까지 떨어뜨리기
-        const tileHeight = 60;
-        let bottomPosition = 600 - tileHeight; // 기본 바닥 위치
+        const tileHeight = 50;
+        let bottomPosition = 500 - tileHeight; // 기본 바닥 위치
         
         // 기존에 남아있는 타일들과의 충돌 체크
         const existingTiles = document.querySelectorAll('.tile[style*="pointer-events: none"]');
@@ -453,12 +523,12 @@ class HistoriaGame {
         existingTiles.forEach(existingTile => {
             const existingTop = parseInt(existingTile.style.top);
             const existingLeft = parseInt(existingTile.style.left);
-            const existingRight = existingLeft + 110;
+            const existingRight = existingLeft + 80;
             
             // 현재 떨어지는 타일들과 x축에서 겹치는지 확인
             this.fallingColumn.forEach(fallingTile => {
                 const fallingLeft = parseInt(fallingTile.style.left);
-                const fallingRight = fallingLeft + 110;
+                const fallingRight = fallingLeft + 80;
                 
                 // x축에서 겹치면 충돌 가능
                 if (!(fallingRight <= existingLeft || fallingLeft >= existingRight)) {
@@ -637,7 +707,7 @@ class HistoriaGame {
         
         // 새로운 컬럼 생성
         this.fallingColumn = [];
-        this.columnPosition = -70;
+        this.columnPosition = -50;
         this.spawnTimer = 0;
     }
     
@@ -661,7 +731,7 @@ class HistoriaGame {
         const stackedTiles = gameBoard.querySelectorAll('.tile[style*="pointer-events: none"]');
         
         // 황금 타일 바로 아래 줄의 Y 좌표 찾기
-        const targetY = tileY + 60; // 타일 높이만큼 아래
+        const targetY = tileY + 50; // 타일 높이만큼 아래
         
         // 바로 아래 줄에 있는 모든 타일들 찾기
         const tilesToRemove = [];
@@ -772,8 +842,8 @@ class HistoriaGame {
         const sortedY = Object.keys(tilesByY).map(y => parseInt(y)).sort((a, b) => b - a);
         
         // 각 줄이 빈 줄인지 확인하고 중력 적용
-        const gameHeight = 600;
-        const tileHeight = 60;
+        const gameHeight = 500;
+        const tileHeight = 50;
         let dropDistance = 0;
         
         for (let y = gameHeight - tileHeight; y >= 0; y -= tileHeight) {
@@ -876,8 +946,8 @@ class HistoriaGame {
             this.updateColumnPositions();
             
             // 바닥 또는 기존 타일에 도달 체크
-            const tileHeight = 60;
-            let bottomPosition = 600 - tileHeight; // 기본 바닥 위치
+            const tileHeight = 50;
+            let bottomPosition = 500 - tileHeight; // 기본 바닥 위치
             
             // 기존에 남아있는 타일들과의 충돌 체크
             const existingTiles = document.querySelectorAll('.tile[style*="pointer-events: none"]');
@@ -886,12 +956,12 @@ class HistoriaGame {
             existingTiles.forEach(existingTile => {
                 const existingTop = parseInt(existingTile.style.top);
                 const existingLeft = parseInt(existingTile.style.left);
-                const existingRight = existingLeft + 110;
+                const existingRight = existingLeft + 80;
                 
                 // 현재 떨어지는 타일들과 x축에서 겹치는지 확인
                 this.fallingColumn.forEach(fallingTile => {
                     const fallingLeft = parseInt(fallingTile.style.left);
-                    const fallingRight = fallingLeft + 110;
+                    const fallingRight = fallingLeft + 80;
                     
                     // x축에서 겹치면 충돌 가능
                     if (!(fallingRight <= existingLeft || fallingLeft >= existingRight)) {
@@ -907,8 +977,8 @@ class HistoriaGame {
                     const tileLeft = parseInt(tile.style.left);
                     const tileTop = parseInt(tile.style.top);
                     this.createParticle(
-                        tileLeft + 55, // 타일 중앙 x
-                        tileTop + 30,  // 타일 중앙 y
+                        tileLeft + 40, // 타일 중앙 x
+                        tileTop + 25,  // 타일 중앙 y
                         'stack'
                     );
                 });
@@ -936,7 +1006,7 @@ class HistoriaGame {
         this.level = 1;
         this.fallingColumn = [];
         this.stackedTiles = [];
-        this.columnPosition = -70;
+        this.columnPosition = -50;
         this.fallSpeed = 0.5; // 초기 속도를 더 천천히 (절반 속도)
         this.spawnTimer = 0;
         this.spawnInterval = 120; // 초기 스폰 간격을 더 짧게 (2초)
