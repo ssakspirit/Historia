@@ -49,11 +49,190 @@ class HistoriaGame {
         this.gameSpeed = 60; // 60fps base
         this.fallSpeed = 1; // pixels per frame (더 천천히)
         this.spawnTimer = 0;
-        this.spawnInterval = 300; // frames (더 긴 간격)
+        this.spawnInterval = 120; // frames (더 짧은 간격 - 2초)
         this.selectedTile = null;
-        this.columnPosition = 80; // start position from top
+        this.columnPosition = -70; // start position from above screen
+        
+        // Web Audio API 초기화
+        this.audioContext = null;
+        this.initAudio();
+        
+        // 파티클 시스템
+        this.particles = [];
         
         this.init();
+    }
+    
+    initAudio() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.log('Audio not supported');
+        }
+    }
+    
+    playSound(type) {
+        if (!this.audioContext) return;
+        
+        // AudioContext가 suspended 상태면 resume
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        switch(type) {
+            case 'move': // 타일 이동
+                oscillator.frequency.setValueAtTime(400, this.audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+                oscillator.start();
+                oscillator.stop(this.audioContext.currentTime + 0.1);
+                break;
+                
+            case 'correct': // 정답
+                oscillator.frequency.setValueAtTime(523, this.audioContext.currentTime); // C5
+                oscillator.frequency.setValueAtTime(659, this.audioContext.currentTime + 0.1); // E5
+                oscillator.frequency.setValueAtTime(784, this.audioContext.currentTime + 0.2); // G5
+                gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.4);
+                oscillator.start();
+                oscillator.stop(this.audioContext.currentTime + 0.4);
+                break;
+                
+            case 'incorrect': // 오답
+                oscillator.frequency.setValueAtTime(200, this.audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(150, this.audioContext.currentTime + 0.15);
+                gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+                oscillator.start();
+                oscillator.stop(this.audioContext.currentTime + 0.3);
+                break;
+                
+            case 'drop': // 타일 드롭
+                oscillator.frequency.setValueAtTime(300, this.audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, this.audioContext.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+                oscillator.start();
+                oscillator.stop(this.audioContext.currentTime + 0.2);
+                break;
+                
+            case 'disappear': // 타일 사라질 때
+                // 마법같은 반짝이는 소리
+                const osc1 = this.audioContext.createOscillator();
+                const osc2 = this.audioContext.createOscillator();
+                const gain1 = this.audioContext.createGain();
+                const gain2 = this.audioContext.createGain();
+                
+                osc1.connect(gain1);
+                osc2.connect(gain2);
+                gain1.connect(this.audioContext.destination);
+                gain2.connect(this.audioContext.destination);
+                
+                // 첫 번째 음 (높은 음)
+                osc1.frequency.setValueAtTime(800, this.audioContext.currentTime);
+                osc1.frequency.exponentialRampToValueAtTime(1600, this.audioContext.currentTime + 0.3);
+                gain1.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+                
+                // 두 번째 음 (화음)
+                osc2.frequency.setValueAtTime(1200, this.audioContext.currentTime + 0.1);
+                osc2.frequency.exponentialRampToValueAtTime(2000, this.audioContext.currentTime + 0.4);
+                gain2.gain.setValueAtTime(0.08, this.audioContext.currentTime + 0.1);
+                gain2.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.4);
+                
+                osc1.start();
+                osc2.start(this.audioContext.currentTime + 0.1);
+                osc1.stop(this.audioContext.currentTime + 0.3);
+                osc2.stop(this.audioContext.currentTime + 0.4);
+                break;
+                
+            case 'gameover': // 게임 오버
+                oscillator.frequency.setValueAtTime(400, this.audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, this.audioContext.currentTime + 1);
+                gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 1);
+                oscillator.start();
+                oscillator.stop(this.audioContext.currentTime + 1);
+                break;
+        }
+    }
+    
+    createParticle(x, y, type) {
+        const colors = {
+            'move': ['#FFD700', '#FFA500', '#FF6347'],
+            'correct': ['#00FF00', '#32CD32', '#90EE90'],
+            'incorrect': ['#FF0000', '#FF4500', '#FF6B6B'],
+            'stack': ['#808080', '#A9A9A9', '#C0C0C0'],
+            'disappear': ['#FFD700', '#FFF700', '#FFFF00', '#00FFFF', '#FF69B4', '#FF1493', '#00FF00', '#ADFF2F']
+        };
+        
+        const particleColors = colors[type] || colors['move'];
+        const particleCount = type === 'disappear' ? 20 : 8; // 사라질 때 더 많은 파티클
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = {
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * (type === 'disappear' ? 10 : 6),
+                vy: (Math.random() - 0.5) * (type === 'disappear' ? 10 : 6) - 2,
+                life: type === 'disappear' ? 60 : 30, // 사라질 때 더 오래 지속
+                maxLife: type === 'disappear' ? 60 : 30,
+                color: particleColors[Math.floor(Math.random() * particleColors.length)],
+                size: Math.random() * (type === 'disappear' ? 6 : 4) + 2,
+                sparkle: type === 'disappear' // 반짝임 효과
+            };
+            this.particles.push(particle);
+        }
+    }
+    
+    updateParticles() {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const particle = this.particles[i];
+            
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+            particle.vy += 0.2; // 중력
+            particle.life--;
+            
+            if (particle.life <= 0) {
+                this.particles.splice(i, 1);
+            }
+        }
+    }
+    
+    renderParticles() {
+        const gameBoard = document.querySelector('.game-board');
+        const existingParticles = gameBoard.querySelectorAll('.particle');
+        existingParticles.forEach(p => p.remove());
+        
+        this.particles.forEach(particle => {
+            const particleElement = document.createElement('div');
+            particleElement.className = 'particle';
+            particleElement.style.position = 'absolute';
+            particleElement.style.left = particle.x + 'px';
+            particleElement.style.top = particle.y + 'px';
+            particleElement.style.width = particle.size + 'px';
+            particleElement.style.height = particle.size + 'px';
+            particleElement.style.backgroundColor = particle.color;
+            particleElement.style.borderRadius = '50%';
+            particleElement.style.pointerEvents = 'none';
+            particleElement.style.opacity = particle.life / particle.maxLife;
+            particleElement.style.zIndex = '1000';
+            
+            // 반짝임 효과 (사라지는 파티클용)
+            if (particle.sparkle) {
+                particleElement.style.boxShadow = `0 0 ${particle.size}px ${particle.color}`;
+                particleElement.style.animation = 'sparkle 0.5s infinite alternate';
+            }
+            
+            gameBoard.appendChild(particleElement);
+        });
     }
     
     init() {
@@ -70,6 +249,9 @@ class HistoriaGame {
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('tile')) {
                 this.handleTileClick(e.target, e);
+            } else if (this.gameState === 'playing' && this.fallingColumn.length > 0) {
+                // 타일이 아닌 곳을 클릭하면 빠르게 떨어뜨리기
+                this.dropTilesFast();
             }
         });
     }
@@ -97,11 +279,34 @@ class HistoriaGame {
         return column;
     }
     
+    getRandomColor() {
+        const colors = [
+            'linear-gradient(45deg, #FF6B6B, #FF8E8E)',
+            'linear-gradient(45deg, #4ECDC4, #7FDDDA)',
+            'linear-gradient(45deg, #45B7D1, #6BC5E8)',
+            'linear-gradient(45deg, #96CEB4, #B8E6C1)',
+            'linear-gradient(45deg, #FFEAA7, #FFF2CC)',
+            'linear-gradient(45deg, #DDA0DD, #E6B3E6)',
+            'linear-gradient(45deg, #F0A500, #F5B800)',
+            'linear-gradient(45deg, #FF7675, #FF9999)',
+            'linear-gradient(45deg, #74B9FF, #A8D5FF)',
+            'linear-gradient(45deg, #55A3FF, #82C7FF)'
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
     createTile(eventData, index) {
         const tile = document.createElement('div');
-        tile.className = `tile ${eventData.era}`;
-        tile.style.top = (this.columnPosition + index * 37) + 'px';
+        tile.className = 'tile';
+        tile.style.top = this.columnPosition + 'px';
+        tile.style.left = (100 + index * 120) + 'px'; // 임시 위치, updateColumnPositions에서 중앙 정렬
+        
+        // 랜덤 색상 적용 (시대별 색상 숨김)
+        tile.style.background = this.getRandomColor();
+        
+        // 처음에는 사건명만 표시 (년도는 오답일 때만 표시)
         tile.textContent = eventData.event;
+        
         tile.dataset.event = eventData.event;
         tile.dataset.year = eventData.year;
         tile.dataset.era = eventData.era;
@@ -130,43 +335,103 @@ class HistoriaGame {
         const isRightSide = clickX > tileWidth / 2;
         
         if (isRightSide) {
-            // 오른쪽 클릭: 위로 이동
-            this.moveTileUp(index);
+            // 오른쪽 클릭: 오른쪽으로 이동
+            this.moveTileRight(index);
         } else {
-            // 왼쪽 클릭: 아래로 이동
-            this.moveTileDown(index);
+            // 왼쪽 클릭: 왼쪽으로 이동
+            this.moveTileLeft(index);
         }
     }
     
-    moveTileUp(index) {
+    moveTileLeft(index) {
         if (index > 0) {
-            // 위 타일과 교환 (맨 위가 아닐 때만)
+            // 왼쪽 타일과 교환 (맨 왼쪽이 아닐 때만)
             const temp = this.fallingColumn[index - 1];
             this.fallingColumn[index - 1] = this.fallingColumn[index];
             this.fallingColumn[index] = temp;
             this.updateColumnPositions();
+            this.playSound('move');
         }
     }
     
-    moveTileDown(index) {
+    moveTileRight(index) {
         if (index < this.fallingColumn.length - 1) {
-            // 아래 타일과 교환 (맨 아래가 아닐 때만)
+            // 오른쪽 타일과 교환 (맨 오른쪽이 아닐 때만)
             const temp = this.fallingColumn[index];
             this.fallingColumn[index] = this.fallingColumn[index + 1];
             this.fallingColumn[index + 1] = temp;
             this.updateColumnPositions();
+            this.playSound('move');
         }
     }
     
     updateColumnPositions() {
+        const totalTiles = this.fallingColumn.length;
+        const boardWidth = 600;
+        const tileWidth = 110;
+        const tileSpacing = 120;
+        const totalWidth = totalTiles * tileWidth + (totalTiles - 1) * (tileSpacing - tileWidth);
+        const startX = (boardWidth - totalWidth) / 2;
+        
         this.fallingColumn.forEach((tile, index) => {
-            const newTop = this.columnPosition + index * 37;
-            tile.style.top = newTop + 'px';
+            tile.style.top = this.columnPosition + 'px';
+            tile.style.left = (startX + index * tileSpacing) + 'px';
             tile.dataset.index = index;
             
             // z-index를 설정하여 겹침 방지
             tile.style.zIndex = 100 + index;
         });
+    }
+    
+    dropTilesFast() {
+        if (this.fallingColumn.length === 0) return;
+        
+        // 현재 떨어지는 타일들을 빠르게 바닥까지 떨어뜨리기
+        const tileHeight = 60;
+        let bottomPosition = 600 - tileHeight; // 기본 바닥 위치
+        
+        // 기존에 남아있는 타일들과의 충돌 체크
+        const existingTiles = document.querySelectorAll('.tile[style*="pointer-events: none"]');
+        let minCollisionY = bottomPosition;
+        
+        existingTiles.forEach(existingTile => {
+            const existingTop = parseInt(existingTile.style.top);
+            const existingLeft = parseInt(existingTile.style.left);
+            const existingRight = existingLeft + 110;
+            
+            // 현재 떨어지는 타일들과 x축에서 겹치는지 확인
+            this.fallingColumn.forEach(fallingTile => {
+                const fallingLeft = parseInt(fallingTile.style.left);
+                const fallingRight = fallingLeft + 110;
+                
+                // x축에서 겹치면 충돌 가능
+                if (!(fallingRight <= existingLeft || fallingLeft >= existingRight)) {
+                    const collisionY = existingTop - tileHeight;
+                    minCollisionY = Math.min(minCollisionY, collisionY);
+                }
+            });
+        });
+        
+        // 타일을 충돌 위치로 즉시 이동
+        this.columnPosition = minCollisionY;
+        this.updateColumnPositions();
+        
+        // 빠른 드롭 시 파티클 효과
+        this.fallingColumn.forEach(tile => {
+            const tileLeft = parseInt(tile.style.left);
+            const tileTop = parseInt(tile.style.top);
+            this.createParticle(
+                tileLeft + 55, // 타일 중앙 x
+                tileTop + 30,  // 타일 중앙 y
+                'stack'
+            );
+        });
+        
+        // 드롭 사운드 재생
+        this.playSound('drop');
+        
+        // 바로 바닥 처리
+        this.handleColumnAtBottom();
     }
     
     checkColumnOrder() {
@@ -175,9 +440,9 @@ class HistoriaGame {
             year: parseInt(tile.dataset.year)
         }));
         
-        // 위에서 아래로: 최신 → 오래된 것 (년도가 큰 것 → 작은 것)
+        // 왼쪽에서 오른쪽으로: 과거 → 미래 (년도가 작은 것 → 큰 것)
         for (let i = 0; i < currentOrder.length - 1; i++) {
-            if (currentOrder[i].year < currentOrder[i + 1].year) {
+            if (currentOrder[i].year > currentOrder[i + 1].year) {
                 return false;
             }
         }
@@ -188,19 +453,54 @@ class HistoriaGame {
         const isCorrect = this.checkColumnOrder();
         
         if (isCorrect) {
+            // 정답 사운드 재생
+            this.playSound('correct');
+            
             // 정답인 경우: 년도 표시 후 타일 제거
             this.fallingColumn.forEach((tile, index) => {
                 tile.classList.add('correct');
                 const yearDisplay = tile.querySelector('.year-display');
                 yearDisplay.classList.add('show');
                 
-                // 년도를 1.5초 보여준 후 타일 제거
+                // 정답 파티클 효과
+                const tileRect = tile.getBoundingClientRect();
+                const gameBoard = document.querySelector('.game-board');
+                const boardRect = gameBoard.getBoundingClientRect();
+                
+                this.createParticle(
+                    tileRect.left - boardRect.left + tileRect.width / 2,
+                    tileRect.top - boardRect.top + tileRect.height / 2,
+                    'correct'
+                );
+                
+                // 년도를 1초 보여준 후 사라지는 효과와 함께 타일 제거
                 setTimeout(() => {
                     yearDisplay.classList.remove('show');
-                    if (tile.parentNode) {
-                        tile.parentNode.removeChild(tile);
-                    }
-                }, 1500);
+                    
+                    // 사라지는 파티클 효과와 사운드
+                    const tileRect = tile.getBoundingClientRect();
+                    const gameBoard = document.querySelector('.game-board');
+                    const boardRect = gameBoard.getBoundingClientRect();
+                    
+                    this.createParticle(
+                        tileRect.left - boardRect.left + tileRect.width / 2,
+                        tileRect.top - boardRect.top + tileRect.height / 2,
+                        'disappear'
+                    );
+                    
+                    this.playSound('disappear');
+                    
+                    // 타일 페이드아웃 효과
+                    tile.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    tile.style.opacity = '0';
+                    tile.style.transform = 'scale(1.2)';
+                    
+                    setTimeout(() => {
+                        if (tile.parentNode) {
+                            tile.parentNode.removeChild(tile);
+                        }
+                    }, 300);
+                }, 1000);
             });
             
             this.score += this.fallingColumn.length * 10 * this.level;
@@ -210,42 +510,68 @@ class HistoriaGame {
             if (this.score > 0 && Math.floor(this.score / 150) + 1 > this.level) {
                 this.level++;
                 this.fallSpeed += 0.3; // 속도 증가를 더 완만하게
-                this.spawnInterval = Math.max(200, this.spawnInterval - 15);
+                this.spawnInterval = Math.max(90, this.spawnInterval - 10); // 최소 1.5초까지 단축
                 this.updateLevel();
             }
         } else {
-            // 오답인 경우: 스택에 추가
+            // 오답 사운드 재생
+            this.playSound('incorrect');
+            
+            // 오답인 경우: 타일을 현재 위치에 그대로 남김
             this.fallingColumn.forEach(tile => {
                 tile.classList.add('incorrect');
                 const yearDisplay = tile.querySelector('.year-display');
                 yearDisplay.classList.add('show');
                 
-                // 스택된 타일로 변환
-                const stackedTile = document.createElement('div');
-                stackedTile.className = `stacked-tile ${tile.dataset.era}`;
-                stackedTile.textContent = tile.textContent;
-                stackedTile.style.bottom = (this.stackedTiles.length * 37) + 'px';
+                // 오답 파티클 효과
+                const tileRect = tile.getBoundingClientRect();
+                const gameBoard = document.querySelector('.game-board');
+                const boardRect = gameBoard.getBoundingClientRect();
                 
-                this.stackedTilesElement.appendChild(stackedTile);
+                this.createParticle(
+                    tileRect.left - boardRect.left + tileRect.width / 2,
+                    tileRect.top - boardRect.top + tileRect.height / 2,
+                    'incorrect'
+                );
+                
+                // 타일에 사건명(위)과 연도(아래) 표시하고 원래 시대별 색상으로 변경
+                const year = parseInt(tile.dataset.year);
+                const yearText = year > 0 ? `${year}년` : `기원전 ${Math.abs(year)}년`;
+                tile.innerHTML = `
+                    <div style="font-size: 13px; font-weight: bold; line-height: 1.0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">${tile.dataset.event}</div>
+                    <div style="font-size: 11px; opacity: 0.9; margin-top: 1px; white-space: nowrap;">${yearText}</div>
+                `;
+                tile.style.flexDirection = 'column';
+                tile.style.justifyContent = 'center';
+                tile.style.alignItems = 'center';
+                
+                // 오답일 때 원래 시대별 색상으로 변경
+                tile.className = `tile ${tile.dataset.era}`;
+                tile.style.background = ''; // 인라인 랜덤 색상 제거
+                
+                // 타일을 클릭할 수 없게 만들기
+                tile.style.opacity = '0.7';
+                tile.style.cursor = 'default';
+                tile.style.pointerEvents = 'none';
+                
+                // 스택된 타일 목록에 추가 (게임오버 판정용)
                 this.stackedTiles.push(tile.dataset);
                 
+                // yearDisplay 숨기기 (2초 후)
                 setTimeout(() => {
-                    if (tile.parentNode) {
-                        tile.parentNode.removeChild(tile);
+                    if (yearDisplay) {
+                        yearDisplay.classList.remove('show');
                     }
+                    tile.classList.remove('incorrect');
                 }, 2000);
             });
             
-            // 게임 오버 체크
-            if (this.stackedTiles.length >= 15) {
-                this.gameOver();
-                return;
-            }
+            // 게임 오버 체크는 메인 루프에서만 수행
         }
         
         // 새로운 컬럼 생성
         this.fallingColumn = [];
-        this.columnPosition = 80;
+        this.columnPosition = -70;
         this.spawnTimer = 0;
     }
     
@@ -258,12 +584,19 @@ class HistoriaGame {
     }
     
     checkGameOver() {
-        return this.stackedTiles.length >= 15 || 
-               (this.fallingColumn.length > 0 && this.columnPosition <= 0);
+        // 쌓인 타일이 게임 화면 최상단(0px)에 실제로 닿았을 때만 게임 오버
+        const existingTiles = document.querySelectorAll('.tile[style*="pointer-events: none"]');
+        const topTile = Array.from(existingTiles).find(tile => {
+            const top = parseInt(tile.style.top);
+            return top <= 0; // 게임 보드 최상단(0px)에 타일이 닿으면 게임 오버
+        });
+        
+        return topTile !== undefined;
     }
     
     gameOver() {
         this.gameState = 'gameOver';
+        this.playSound('gameover');
         this.finalScoreElement.textContent = this.score;
         this.gameOverElement.style.display = 'flex';
     }
@@ -278,6 +611,18 @@ class HistoriaGame {
         if (this.fallingColumn.length === 0) {
             this.spawnTimer++;
             if (this.spawnTimer >= this.spawnInterval) {
+                // 새 타일이 생성될 위치에 기존 타일이 있는지 체크
+                const existingTiles = document.querySelectorAll('.tile[style*="pointer-events: none"]');
+                const blockingTile = Array.from(existingTiles).find(tile => {
+                    const top = parseInt(tile.style.top);
+                    return top <= -50; // 생성 위치(-70px) 근처에 타일이 있으면
+                });
+                
+                if (blockingTile) {
+                    this.gameOver();
+                    return;
+                }
+                
                 this.fallingColumn = this.createFallingColumn();
                 this.spawnTimer = 0;
             }
@@ -288,12 +633,51 @@ class HistoriaGame {
             this.columnPosition += this.fallSpeed;
             this.updateColumnPositions();
             
-            // 바닥 도달 체크
-            const maxPosition = 560 - (this.fallingColumn.length * 37) - (this.stackedTiles.length * 37);
-            if (this.columnPosition >= maxPosition) {
+            // 바닥 또는 기존 타일에 도달 체크
+            const tileHeight = 60;
+            let bottomPosition = 600 - tileHeight; // 기본 바닥 위치
+            
+            // 기존에 남아있는 타일들과의 충돌 체크
+            const existingTiles = document.querySelectorAll('.tile[style*="pointer-events: none"]');
+            let minCollisionY = bottomPosition;
+            
+            existingTiles.forEach(existingTile => {
+                const existingTop = parseInt(existingTile.style.top);
+                const existingLeft = parseInt(existingTile.style.left);
+                const existingRight = existingLeft + 110;
+                
+                // 현재 떨어지는 타일들과 x축에서 겹치는지 확인
+                this.fallingColumn.forEach(fallingTile => {
+                    const fallingLeft = parseInt(fallingTile.style.left);
+                    const fallingRight = fallingLeft + 110;
+                    
+                    // x축에서 겹치면 충돌 가능
+                    if (!(fallingRight <= existingLeft || fallingLeft >= existingRight)) {
+                        const collisionY = existingTop - tileHeight;
+                        minCollisionY = Math.min(minCollisionY, collisionY);
+                    }
+                });
+            });
+            
+            if (this.columnPosition >= minCollisionY) {
+                // 타일이 바닥에 떨어질 때 파티클 효과
+                this.fallingColumn.forEach(tile => {
+                    const tileLeft = parseInt(tile.style.left);
+                    const tileTop = parseInt(tile.style.top);
+                    this.createParticle(
+                        tileLeft + 55, // 타일 중앙 x
+                        tileTop + 30,  // 타일 중앙 y
+                        'stack'
+                    );
+                });
+                
                 this.handleColumnAtBottom();
             }
         }
+        
+        // 파티클 업데이트 및 렌더링
+        this.updateParticles();
+        this.renderParticles();
         
         // 게임 오버 체크
         if (this.checkGameOver()) {
@@ -310,19 +694,25 @@ class HistoriaGame {
         this.level = 1;
         this.fallingColumn = [];
         this.stackedTiles = [];
-        this.columnPosition = 80;
+        this.columnPosition = -70;
         this.fallSpeed = 1; // 초기 속도를 더 천천히
         this.spawnTimer = 0;
-        this.spawnInterval = 300; // 초기 스폰 간격을 더 길게
+        this.spawnInterval = 120; // 초기 스폰 간격을 더 짧게 (2초)
         
         // UI 초기화
         this.menuScreen.style.display = 'none';
         this.gameOverElement.style.display = 'none';
         this.stackedTilesElement.innerHTML = '';
         
-        // 기존 타일들 제거
-        const tiles = document.querySelectorAll('.tile');
+        // 기존 타일들 제거 (게임 보드 내의 모든 타일)
+        const gameBoard = document.querySelector('.game-board');
+        const tiles = gameBoard.querySelectorAll('.tile');
         tiles.forEach(tile => tile.remove());
+        
+        // 파티클 초기화
+        this.particles = [];
+        const particles = gameBoard.querySelectorAll('.particle');
+        particles.forEach(particle => particle.remove());
         
         this.updateScore();
         this.updateLevel();
