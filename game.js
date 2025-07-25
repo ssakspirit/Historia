@@ -40,6 +40,7 @@ class HistoriaGame {
         this.finalScoreElement = document.getElementById('finalScore');
         this.menuScreen = document.getElementById('menuScreen');
         this.stackedTilesElement = document.getElementById('stackedTiles');
+        this.pauseScreen = document.getElementById('pauseScreen');
         
         this.gameState = 'ready'; // ready, playing, paused, gameOver
         this.score = 0;
@@ -47,7 +48,7 @@ class HistoriaGame {
         this.fallingColumn = [];
         this.stackedTiles = [];
         this.gameSpeed = 60; // 60fps base
-        this.fallSpeed = 1; // pixels per frame (더 천천히)
+        this.fallSpeed = 0.5; // pixels per frame (더 천천히 - 절반 속도)
         this.spawnTimer = 0;
         this.spawnInterval = 120; // frames (더 짧은 간격 - 2초)
         this.selectedTile = null;
@@ -59,6 +60,9 @@ class HistoriaGame {
         
         // 파티클 시스템
         this.particles = [];
+        
+        // 최고 점수 관리
+        this.highScore = this.loadHighScore();
         
         this.init();
     }
@@ -237,7 +241,24 @@ class HistoriaGame {
     
     init() {
         this.setupEventListeners();
+        this.updateHighScoreDisplay();
         this.showMenu();
+    }
+    
+    loadHighScore() {
+        const saved = localStorage.getItem('historia-high-score');
+        return saved ? parseInt(saved) : 0;
+    }
+    
+    saveHighScore() {
+        localStorage.setItem('historia-high-score', this.highScore.toString());
+    }
+    
+    updateHighScoreDisplay() {
+        const highScoreElement = document.getElementById('highScore');
+        if (highScoreElement) {
+            highScoreElement.textContent = this.highScore.toLocaleString();
+        }
     }
     
     showMenu() {
@@ -250,8 +271,17 @@ class HistoriaGame {
             if (e.target.classList.contains('tile')) {
                 this.handleTileClick(e.target, e);
             } else if (this.gameState === 'playing' && this.fallingColumn.length > 0) {
-                // 타일이 아닌 곳을 클릭하면 빠르게 떨어뜨리기
-                this.dropTilesFast();
+                // 게임 보드 영역 내에서만 빠른 드롭 실행
+                const gameBoard = document.querySelector('.game-board');
+                const gameBoardRect = gameBoard.getBoundingClientRect();
+                const clickX = e.clientX;
+                const clickY = e.clientY;
+                
+                // 클릭이 게임 보드 내부에 있는지 확인
+                if (clickX >= gameBoardRect.left && clickX <= gameBoardRect.right &&
+                    clickY >= gameBoardRect.top && clickY <= gameBoardRect.bottom) {
+                    this.dropTilesFast();
+                }
             }
         });
     }
@@ -542,11 +572,11 @@ class HistoriaGame {
             this.score += this.fallingColumn.length * 10 * this.level;
             this.updateScore();
             
-            // 레벨업 체크 (속도는 증가시키지 않음)
+            // 레벨업 체크 (속도를 점진적으로 증가)
             if (this.score > 0 && Math.floor(this.score / 150) + 1 > this.level) {
                 this.level++;
-                // this.fallSpeed += 0.3; // 속도 증가 제거
-                // this.spawnInterval = Math.max(90, this.spawnInterval - 10); // 스폰 간격 변경 제거
+                // 낙하 속도를 점진적으로 증가 (최대 0.9까지)
+                this.fallSpeed = Math.min(0.9, 0.5 + (this.level - 1) * 0.05);
                 this.updateLevel();
             }
         } else {
@@ -801,6 +831,14 @@ class HistoriaGame {
     gameOver() {
         this.gameState = 'gameOver';
         this.playSound('gameover');
+        
+        // 최고 점수 업데이트
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            this.saveHighScore();
+            this.updateHighScoreDisplay();
+        }
+        
         this.finalScoreElement.textContent = this.score;
         this.gameOverElement.style.display = 'flex';
     }
@@ -899,7 +937,7 @@ class HistoriaGame {
         this.fallingColumn = [];
         this.stackedTiles = [];
         this.columnPosition = -70;
-        this.fallSpeed = 1; // 초기 속도를 더 천천히
+        this.fallSpeed = 0.5; // 초기 속도를 더 천천히 (절반 속도)
         this.spawnTimer = 0;
         this.spawnInterval = 120; // 초기 스폰 간격을 더 짧게 (2초)
         
@@ -926,8 +964,37 @@ class HistoriaGame {
     pause() {
         if (this.gameState === 'playing') {
             this.gameState = 'paused';
-            this.showMenu();
+            this.pauseScreen.style.display = 'flex';
         }
+    }
+    
+    resume() {
+        if (this.gameState === 'paused') {
+            this.gameState = 'playing';
+            this.pauseScreen.style.display = 'none';
+            
+            // 잠시 후에 이벤트 처리를 재개하여 즉시 클릭 방지
+            setTimeout(() => {
+                // 게임 상태만 복원하고 추가 처리 없음
+            }, 100);
+        }
+    }
+    
+    quitToMenu() {
+        this.gameState = 'ready';
+        this.pauseScreen.style.display = 'none';
+        
+        // 게임 보드 초기화
+        const gameBoard = document.querySelector('.game-board');
+        const tiles = gameBoard.querySelectorAll('.tile');
+        tiles.forEach(tile => tile.remove());
+        
+        // 파티클 초기화
+        this.particles = [];
+        const particles = gameBoard.querySelectorAll('.particle');
+        particles.forEach(particle => particle.remove());
+        
+        this.showMenu();
     }
 }
 
@@ -943,6 +1010,18 @@ function startGame() {
 function pauseGame() {
     if (game) {
         game.pause();
+    }
+}
+
+function resumeGame() {
+    if (game) {
+        game.resume();
+    }
+}
+
+function quitToMenu() {
+    if (game) {
+        game.quitToMenu();
     }
 }
 

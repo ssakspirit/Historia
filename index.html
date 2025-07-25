@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historia Timeline Game</title>
+    <title>Historia - 한국사 타임라인 퍼즐 게임</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
     <style>
         * {
             margin: 0;
@@ -12,7 +14,9 @@
         }
 
         body {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, rgba(92, 51, 23, 0.3) 0%, rgba(139, 90, 43, 0.2) 50%, rgba(160, 82, 45, 0.1) 100%),
+                        url('src/historia.png') center/cover no-repeat;
+            backdrop-filter: blur(3px);
             color: white;
             font-family: 'Arial', sans-serif;
             overflow: hidden;
@@ -28,6 +32,18 @@
             overflow: hidden;
         }
 
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('src/historia.png') center/cover no-repeat;
+            filter: blur(2px);
+            z-index: -1;
+        }
+
         .game-header {
             position: absolute;
             top: 20px;
@@ -35,41 +51,84 @@
             right: 20px;
             z-index: 100;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(255,255,255,0.1);
+            justify-content: center;
+            align-items: flex-start;
             padding: 15px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
         }
 
-        .score {
-            font-size: 20px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        .header-boxes {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: flex-start;
         }
 
-        .level {
-            font-size: 20px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        .header-box {
+            background: rgba(139, 69, 19, 0.8);
+            border: 3px solid #D4AF37;
+            border-radius: 8px;
+            padding: 8px;
+            width: 115px;
+            height: 75px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box;
+            box-shadow: 
+                0 0 15px rgba(212, 175, 55, 0.4),
+                inset 0 0 25px rgba(139, 69, 19, 0.3);
         }
 
-        .pause-btn {
-            background: #ff6b6b;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+        .header-box h4 {
+            color: #ffd700;
+            margin: 0 0 5px 0;
             font-size: 14px;
-            cursor: pointer;
-            transition: background 0.3s ease;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
 
-        .pause-btn:hover {
-            background: #ff5252;
+        .header-box p {
+            color: #f4e4bc;
+            margin: 0;
+            font-size: 10px;
+            line-height: 1.2;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .header-box p span {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .pause-box {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid #D4AF37 !important;
+            box-shadow: 
+                0 0 15px rgba(212, 175, 55, 0.4),
+                inset 0 0 25px rgba(139, 69, 19, 0.3) !important;
+        }
+
+        .pause-box h4 {
+            font-size: 16px !important;
+            margin-bottom: 2px !important;
+        }
+
+        .pause-emoji {
+            font-size: 24px !important;
+            margin: 0 !important;
+            line-height: 1 !important;
+        }
+
+        .pause-box:hover {
+            background: rgba(160, 82, 45, 0.9);
+            border-color: #ffed4e !important;
+            transform: translateY(-1px);
+            box-shadow: 
+                0 0 20px rgba(255, 237, 78, 0.6),
+                inset 0 0 30px rgba(139, 69, 19, 0.4) !important;
         }
 
         .game-area {
@@ -85,10 +144,14 @@
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            border: 3px solid rgba(255,255,255,0.3);
+            background: linear-gradient(rgba(139, 69, 19, 0.7), rgba(160, 82, 45, 0.6)),
+                        url('src/sigansina.png') center/cover no-repeat;
+            border: 4px solid #D4AF37;
             border-radius: 10px;
             overflow: hidden;
+            box-shadow: 
+                0 0 20px rgba(212, 175, 55, 0.5),
+                inset 0 0 30px rgba(139, 69, 19, 0.3);
         }
 
         .grid-background {
@@ -312,15 +375,6 @@
             background: #45a049;
         }
 
-        .bottom-line {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: #ff6b6b;
-            box-shadow: 0 0 10px #ff6b6b;
-        }
 
         .menu-screen {
             position: fixed;
@@ -328,43 +382,77 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, rgba(92, 51, 23, 0.2) 0%, rgba(139, 90, 43, 0.15) 50%, rgba(160, 82, 45, 0.1) 100%),
+                        url('src/historia.png') center/cover no-repeat;
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: center;
             z-index: 2000;
         }
 
         .menu-content {
-            background: white;
-            color: #333;
-            padding: 40px;
-            border-radius: 20px;
+            color: #f4e4bc;
+            padding: 40px 40px 80px 40px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            max-width: 500px;
+            max-width: 400px;
+            position: relative;
+            margin-bottom: 50px;
         }
 
         .menu-content h1 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 2.5rem;
+            color: #ffd700;
+            margin-bottom: 40px;
+            font-size: 4rem;
+            text-shadow: 
+                4px 4px 0px #8B4513,
+                0 0 40px rgba(255, 215, 0, 1),
+                0 0 80px rgba(255, 215, 0, 0.6);
+            font-family: 'Times New Roman', serif;
+            font-weight: bold;
+            letter-spacing: 3px;
         }
 
         .start-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 18px;
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            color: #f4e4bc;
+            border: 3px solid #ffd700;
+            padding: 20px 50px;
+            border-radius: 12px;
+            font-size: 22px;
             cursor: pointer;
-            margin: 10px;
-            transition: background 0.3s ease;
+            margin: 30px 0;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 1);
+            box-shadow: 
+                0 8px 20px rgba(0, 0, 0, 0.6),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+            transition: left 0.5s ease;
         }
 
         .start-btn:hover {
-            background: #5a67d8;
+            background: linear-gradient(135deg, #A0522D, #CD853F);
+            border-color: #ffed4e;
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.6),
+                0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .start-btn:hover::before {
+            left: 100%;
         }
 
         .stacked-tiles {
@@ -396,34 +484,114 @@
             0% { transform: scale(1) rotate(0deg); }
             100% { transform: scale(1.2) rotate(180deg); }
         }
+
+        .pause-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .pause-content {
+            background: white;
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 400px;
+        }
+
+        .pause-content h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .pause-btn-action {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s ease;
+            min-width: 180px;
+            display: block;
+            margin: 10px auto;
+        }
+
+        .pause-btn-action:hover {
+            background: #5a67d8;
+        }
+
+        .pause-btn-action.quit {
+            background: #ff6b6b;
+        }
+
+        .pause-btn-action.quit:hover {
+            background: #ff5252;
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
         <div class="menu-screen" id="menuScreen">
             <div class="menu-content">
-                <h1>Historia Timeline</h1>
-                <p>위에서 떨어지는 역사 사건들을 시간 순서대로 정렬하세요!</p>
-                <p style="font-size: 14px; color: #666; margin: 20px 0;">
-                    • 타일 왼쪽을 클릭하면 왼쪽 타일과 순서를 바꿉니다<br>
-                    • 타일 오른쪽을 클릭하면 오른쪽 타일과 순서를 바꿉니다<br>
-                    • 오래된 사건이 왼쪽으로, 최근 사건이 오른쪽으로!
-                </p>
-                <button class="start-btn" onclick="startGame()">게임 시작</button>
+                <h1>HISTORIA</h1>
+                
+                <button class="start-btn" onclick="startGame()">⚔️ 훈련 시작 ⚔️</button>
+                
+                <div style="margin: 25px 0;">
+                    <p style="font-size: 16px; color: #ffd700; margin: 0; text-shadow: 3px 3px 6px rgba(0,0,0,1);">
+                        🏆 최고 점수: <span id="highScore" style="color: #ffed4e; font-weight: bold;">0</span>
+                    </p>
+                </div>
+                
+                <div style="margin-top: 30px; font-size: 12px; color: #d4af37; text-shadow: 2px 2px 4px rgba(0,0,0,0.9);">
+                    <p style="margin: 5px 0;">Created by <strong style="color: #ffd700;">stevecoding</strong></p>
+                    <p style="margin: 5px 0;">ssakspirit@gmail.com</p>
+                </div>
             </div>
         </div>
 
         <div class="game-header">
-            <div class="score">점수: <span id="score">0</span></div>
-            <div class="level">레벨: <span id="level">1</span></div>
-            <button class="pause-btn" onclick="pauseGame()">일시정지</button>
+            <div class="header-boxes">
+                <div class="header-box">
+                    <h4>점수</h4>
+                    <p><span id="score">0</span></p>
+                </div>
+                <div class="header-box">
+                    <h4>레벨</h4>
+                    <p><span id="level">1</span></p>
+                </div>
+                <div class="header-box pause-box" onclick="pauseGame()">
+                    <h4>일시정지</h4>
+                    <p class="pause-emoji">⏸️</p>
+                </div>
+                <div class="header-box">
+                    <h4>훈련방법</h4>
+                    <p>타일 클릭: 좌우로 이동<br>화면 클릭: 빠른 낙하</p>
+                </div>
+                <div class="header-box">
+                    <h4>특수무기</h4>
+                    <p>⭐ 황금검: 한 줄 제거<br>⏰ 시간방패: 시대 제거</p>
+                </div>
+            </div>
         </div>
         
         <div class="game-area" id="gameArea">
             <div class="game-board">
                 <div class="grid-background"></div>
                 <div class="stacked-tiles" id="stackedTiles"></div>
-                <div class="bottom-line"></div>
             </div>
         </div>
         
@@ -432,6 +600,15 @@
                 <h2>게임 오버!</h2>
                 <p>최종 점수: <span id="finalScore">0</span></p>
                 <button class="restart-btn" onclick="restartGame()">다시 시작</button>
+            </div>
+        </div>
+        
+        <div class="pause-screen" id="pauseScreen" onclick="event.stopPropagation();">
+            <div class="pause-content" onclick="event.stopPropagation();">
+                <h2>⏸️ 게임 일시정지</h2>
+                <p style="margin: 20px 0; color: #666;">게임이 일시정지되었습니다</p>
+                <button class="pause-btn-action" onclick="resumeGame(); event.stopPropagation();">▶️ 계속하기</button>
+                <button class="pause-btn-action quit" onclick="quitToMenu(); event.stopPropagation();">🏠 메뉴로 돌아가기</button>
             </div>
         </div>
     </div>
