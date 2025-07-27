@@ -678,6 +678,156 @@
             to { transform: rotate(360deg); }
         }
 
+        /* 연대기 화면 스타일 */
+        .chronology-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(92, 51, 23, 0.2) 0%, rgba(139, 90, 43, 0.15) 50%, rgba(160, 82, 45, 0.1) 100%),
+                        url('src/historia.png') center/cover no-repeat;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chronology-header {
+            background: rgba(139, 69, 19, 0.9);
+            border-bottom: 3px solid #D4AF37;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            color: #f4e4bc;
+            border: 2px solid #D4AF37;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            touch-action: manipulation;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(135deg, #A0522D, #CD853F);
+            border-color: #ffed4e;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .chronology-title {
+            color: #ffd700;
+            margin: 0;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-family: 'Times New Roman', serif;
+            font-weight: bold;
+        }
+
+        .chronology-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .era-section {
+            margin-bottom: 30px;
+            background: rgba(139, 69, 19, 0.8);
+            border: 2px solid #D4AF37;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .era-title {
+            color: #ffd700;
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            border-bottom: 2px solid #D4AF37;
+            padding-bottom: 8px;
+        }
+
+        .events-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .event-item {
+            background: rgba(160, 82, 45, 0.7);
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .event-item:hover {
+            background: rgba(160, 82, 45, 0.9);
+            border-color: #D4AF37;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .event-name {
+            color: #f4e4bc;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+            flex: 1;
+        }
+
+        .event-year {
+            color: #ffd700;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+
+        /* 시대별 색상 */
+        .era-section[data-era="ancient"] {
+            border-color: #FFA500;
+        }
+        .era-section[data-era="ancient"] .era-title {
+            color: #FFD700;
+        }
+
+        .era-section[data-era="medieval"] {
+            border-color: #4169E1;
+        }
+        .era-section[data-era="medieval"] .era-title {
+            color: #87CEEB;
+        }
+
+        .era-section[data-era="modern"] {
+            border-color: #32CD32;
+        }
+        .era-section[data-era="modern"] .era-title {
+            color: #90EE90;
+        }
+
+        .era-section[data-era="contemporary"] {
+            border-color: #9932CC;
+        }
+        .era-section[data-era="contemporary"] .era-title {
+            color: #DDA0DD;
+        }
+
         /* 가로 모드일 때 회전 경고 표시 */
         @media screen and (orientation: landscape) and (max-height: 500px) {
             .rotate-warning {
@@ -775,6 +925,35 @@
                 
                 <button class="pause-btn-action" id="resumeButton">▶️ 계속하기</button>
                 <button class="pause-btn-action quit" id="quitButton">🏠 메뉴로 돌아가기</button>
+            </div>
+        </div>
+        
+        <div class="chronology-screen" id="chronologyScreen">
+            <div class="chronology-header">
+                <button class="back-btn" id="backButton">⬅️ 뒤로가기</button>
+                <h1 class="chronology-title">한국사 연대기</h1>
+            </div>
+            
+            <div class="chronology-content">
+                <div class="era-section" data-era="ancient">
+                    <h2 class="era-title">🏺 고대사 (선사시대~통일신라)</h2>
+                    <div class="events-list" id="ancientEvents"></div>
+                </div>
+                
+                <div class="era-section" data-era="medieval">
+                    <h2 class="era-title">🏰 중세사 (고려~조선후기)</h2>
+                    <div class="events-list" id="medievalEvents"></div>
+                </div>
+                
+                <div class="era-section" data-era="modern">
+                    <h2 class="era-title">🚂 근현대사 (개항~광복)</h2>
+                    <div class="events-list" id="modernEvents"></div>
+                </div>
+                
+                <div class="era-section" data-era="contemporary">
+                    <h2 class="era-title">🏢 현대사 (분단~현재)</h2>
+                    <div class="events-list" id="contemporaryEvents"></div>
+                </div>
             </div>
         </div>
     </div>

@@ -318,11 +318,80 @@ class HistoriaGame {
         this.showMenu();
     }
     
+    showChronology() {
+        const chronologyScreen = document.getElementById('chronologyScreen');
+        this.menuScreen.style.display = 'none';
+        chronologyScreen.style.display = 'flex';
+        this.populateChronologyEvents();
+        
+        // 연대기 화면의 버튼들 재설정
+        setTimeout(() => {
+            this.setupButton('backButton', () => {
+                console.log('Back button activated');
+                this.hideChronology();
+            });
+        }, 50);
+    }
+    
+    hideChronology() {
+        const chronologyScreen = document.getElementById('chronologyScreen');
+        chronologyScreen.style.display = 'none';
+        this.showMenu();
+    }
+    
+    populateChronologyEvents() {
+        const eras = {
+            ancient: document.getElementById('ancientEvents'),
+            medieval: document.getElementById('medievalEvents'),
+            modern: document.getElementById('modernEvents'),
+            contemporary: document.getElementById('contemporaryEvents')
+        };
+        
+        // 각 시대별로 이벤트 정리
+        Object.keys(eras).forEach(era => {
+            const container = eras[era];
+            container.innerHTML = '';
+            
+            const eraEvents = historicalEvents
+                .filter(event => event.era === era)
+                .sort((a, b) => a.year - b.year);
+            
+            eraEvents.forEach(event => {
+                const eventItem = document.createElement('div');
+                eventItem.className = 'event-item';
+                
+                const eventName = document.createElement('div');
+                eventName.className = 'event-name';
+                eventName.textContent = event.event;
+                
+                const eventYear = document.createElement('div');
+                eventYear.className = 'event-year';
+                eventYear.textContent = event.year > 0 ? `${event.year}년` : `기원전 ${Math.abs(event.year)}년`;
+                
+                eventItem.appendChild(eventName);
+                eventItem.appendChild(eventYear);
+                container.appendChild(eventItem);
+            });
+        });
+    }
+    
     setupAllButtons() {
         // 시작 버튼
         this.setupButton('startButton', () => {
             console.log('Start button activated');
             this.start();
+        });
+        
+        // 연대기 버튼
+        this.setupButton('chronologyButton', () => {
+            console.log('Chronology button activated');
+            this.showChronology();
+        });
+        
+        // 뒤로가기 버튼
+        this.setupButton('backButton', () => {
+            console.log('Back button activated');
+            this.hideChronology();
         });
         
         // 일시정지 버튼 (게임 헤더에 있는)
@@ -412,6 +481,10 @@ class HistoriaGame {
             this.setupButton('startButton', () => {
                 console.log('Start button activated');
                 this.start();
+            });
+            this.setupButton('chronologyButton', () => {
+                console.log('Chronology button activated');
+                this.showChronology();
             });
         }, 50);
     }
