@@ -195,7 +195,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 3px;
+            padding: 1px;
             font-size: 11px;
             font-weight: bold;
             color: white;
@@ -484,9 +484,9 @@
             background: linear-gradient(135deg, #8B4513, #A0522D);
             color: #f4e4bc;
             border: 3px solid #ffd700;
-            padding: 15px 40px;
+            padding: 5px;
             border-radius: 12px;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             margin: 20px 0;
             transition: all 0.3s ease;
@@ -497,9 +497,14 @@
                 inset 0 2px 0 rgba(255, 255, 255, 0.2);
             position: relative;
             overflow: hidden;
-            min-height: 50px;
-            min-width: 200px;
+            height: 50px;
+            width: 120px;
             touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-shrink: 0;
         }
 
         .start-btn::before {
@@ -697,7 +702,10 @@
             <h1 class="menu-title">HISTORIA</h1>
             
             <div class="menu-content">
-                <button class="start-btn" id="startButton">⚔️ 훈련 시작 ⚔️</button>
+                <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+                    <button class="start-btn" id="startButton">⚔️ 훈련 시작</button>
+                    <button class="start-btn" id="chronologyButton">📜 연대기</button>
+                </div>
                 
                 <div style="margin: 25px 0;">
                     <p style="font-size: 16px; color: #ffd700; margin: 0; text-shadow: 3px 3px 6px rgba(0,0,0,1);">
